@@ -1,0 +1,118 @@
+from collections import Counter
+import seaborn as sns
+import statistics as stats
+
+# Plotting cell
+from matplotlib import pyplot as plt
+
+# font
+plt.rcParams.update({'font.size': 8})
+
+# reset the default figsize value
+plt.rcParams["figure.figsize"] = plt.rcParamsDefault["figure.figsize"]
+
+# 144 is good for a high-resolution display. Try 100 if it's too big
+plt.rcParams["figure.dpi"] = (120)
+
+def printInfo(dv):
+  print(f"Length: {len(dv)}")
+  print(f"Minimum: {min(dv)}")
+  print(f"Maximum: {max(dv)}")
+  print(f"Mean: {stats.mean(dv)}")
+  print(f"16%,50%,84% Percentile values: {stats.quantile(dv,0.16)},{stats.quantile(dv,0.50)},{stats.quantile(dv,0.84)}")
+  print(f"Median: {stats.median(dv)}")
+  print(f"Std Deviation: {stats.standard_deviation(dv)}")
+  print(f"Interquartile Range: {stats.interquartile_range(dv)}")
+
+import csv
+gamma = []
+with open('gamma.csv') as csvfile:
+  rdr = csv.reader(csvfile)
+  for row in rdr:
+    gamma.append(float(row[0]))
+
+printInfo(gamma)
+
+sns.histplot(x=gamma)
+plt.axvline(x=stats.mean(gamma),color='red')
+plt.axvline(x=stats.median(gamma),color='blue')
+
+plt.axvline(x=stats.quantile(gamma,0.16),color='black')
+plt.axvline(x=stats.quantile(gamma,0.84),color='black')
+plt.axvline(x=stats.median(gamma),color='blue')
+
+plt.title(f"Gamma distribution with mean (red) and median (blue)")
+plt.show()
+
+import random
+def centralLimit(somedata):
+  # select 100 values using random.sample() function 
+  sample_100 = random.sample(somedata, 100)
+  stats.mean(sample_100)
+
+  #  use for loop to simulate this process 10,000 times
+  # store each mean into an array called means_size_100
+  means_size_100 = []
+  sums_size_100 = []
+  for _ in range(10000):
+      sample_size_100 = random.sample(somedata, 100)
+      means_size_100.append(stats.mean(sample_size_100))
+      sums_size_100.append(sum(sample_size_100))
+  return sample_100,means_size_100,sums_size_100
+
+sample_100,means_size_100,sums_size_100 = centralLimit(gamma)
+
+# plot histogram of 100 samples
+plt.hist(sample_100)
+plt.xlabel('Mean')
+plt.ylabel('Frequency')
+
+plt.title('Frequency of Mean');
+
+# plot histogram of 100 samples tested 10K time
+plt.hist(means_size_100)
+plt.xlabel('Mean')
+plt.ylabel('Frequency')
+plt.title('Frequency of Mean');
+
+# plot histogram of 100 samples tested 10K time
+plt.hist(sums_size_100)
+plt.xlabel('Sum')
+plt.ylabel('Frequency')
+plt.title('Frequency of Sum');
+
+printInfo(means_size_100)
+
+printInfo(sums_size_100)
+
+# open the image as an array
+from PIL import Image
+from numpy import asarray
+# load the image
+#insert and jpeg below; function is designed to work on images and then convert them to one dimensional csv files
+#but image was inserted as anselAdams_blackSun.csv is a 1-d csv file
+image = Image.open('anselAdams_blackSun.csv')
+# convert image to numpy array
+data = asarray(image)
+print(type(data))
+# summarize shape
+print(data.shape)
+
+flat = data.flatten()
+
+np.savetxt('anselAdams_blackSun.csv',data)
+
+# create Pillow image
+image2 = Image.fromarray(data)
+print(type(image2))
+
+# summarize image details
+print(image2.mode)
+print(image2.size)
+image2
+
+#image2.save()?
+#csv.save(image2)?
+
+
+
