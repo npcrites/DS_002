@@ -1,0 +1,283 @@
+# delete existing copies
+! rm *.csv ;
+
+# Get the data from GitHub
+!wget https://gist.githubusercontent.com/douglasgoodwin/4bebb2445759313a95690de41d338729/raw/5214a3761f648ccc9f3d692eab8a8e9cc8cd3fd7/artists.csv ;
+!wget https://gist.githubusercontent.com/douglasgoodwin/4bebb2445759313a95690de41d338729/raw/5214a3761f648ccc9f3d692eab8a8e9cc8cd3fd7/artworks.csv
+
+from collections import Counter
+import random
+from datetime import datetime, date
+from dataclasses import dataclass, field
+from typing import Optional, List, Dict
+
+# Plotting cell
+import seaborn as sns
+from matplotlib import pyplot as plt
+
+# font
+plt.rcParams.update({'font.size': 8})
+
+# reset the default figsize value
+plt.rcParams["figure.figsize"] = plt.rcParamsDefault["figure.figsize"]
+
+# 144 is good for a high-resolution display. Try 100 if it's too big
+plt.rcParams["figure.dpi"] = (120)
+
+# code to draw a donut plot
+# Make a function to display a donut plot
+
+def donutplot(keys=["yes","no"],vals=[33,20],legend="Are you in a good mood?"):
+  # Create a white circle at the center of the plot
+  my_circle = plt.Circle( (0,0), 0.7, color='white')
+
+  # Draw pie wedges with thick white edges
+  props = {'linewidth':4, 'edgecolor':'white'}
+  plt.pie(vals,labels=keys,wedgeprops=props )
+
+  plt.title(legend)
+  p = plt.gcf()   # get current figure
+  p.gca().add_artist(my_circle)
+
+  return p
+
+# Utility functions
+
+import csv
+from pathlib import Path
+
+def loadData(source_path: Path) -> List[Dict[str, str]]:
+  """Useful fuction to load local CSV files"""
+  with source_path.open() as source_file:
+    rdr= csv.DictReader(source_file)
+    data: List[Dict[str, str]] = list(rdr)
+    return data
+
+def string2Date(astring='2000-01-19'):
+  """The dates are a mess, clean them up! Did I miss anything?"""
+  try:
+    if astring == '':
+      return None
+    elif 'Unknown' in astring:
+      return None
+    elif 'c. ' in astring:
+      # 'c. 1917'
+      y = astring.split(' ')[-1]
+      dto = datetime.strptime(y, '%Y')
+      return dto
+    elif astring == 'n.d.':
+      return None
+    elif len(astring.split('-')) == 3:
+      dto = datetime.strptime(astring, '%Y-%m-%d')
+      return dto
+    elif len(astring.split('–')) == 2:
+      # ie date is 1977–78 -- a long hyphen
+      y = astring.split('–')[0]
+      dto = datetime.strptime(y, '%Y')
+      return dto
+    elif len(astring.split('-')) == 2:
+      # ie date is 1977-78
+      y = astring.split('-')[0]
+      dto = datetime.strptime(y, '%Y')
+      return dto
+    else:
+      dto = datetime.strptime(astring, '%Y')
+      return dto
+  except:
+    return None
+
+def string2Float(astring):
+  if astring == '':
+    return None
+  else:
+    return float(astring)
+
+@dataclass
+class Artist:
+    id: int
+    name: str=None
+    nationality: str=None
+    gender: str=None
+    birth: datetime=None
+    death: datetime=None
+
+    def getMyArtworks(self,artworks):
+      myartworks = []
+      for w in artworks:
+        if self.id in w.artists:
+          myartworks.append(w)
+      return myartworks
+
+@dataclass
+class Artwork:
+    id: int
+    title: str="Untitled"
+    # artist: List[Artist]=field(default_factory=list)
+    artists: List[int]=field(default_factory=list)
+    name: str="unspecified"
+    date: datetime=None
+    medium: str=None
+    dimensions: str=None
+    acquired: datetime=None
+    credit: str=None
+    catalogue: str=None
+    department: str=None
+    classification: str=None
+    objectnumber: int=None
+    diameter: int=None
+    circumference: int=None
+    height: int=None
+    length: int=None
+    width: int=None
+    depth: int=None
+    weight: int=None
+    duration: int=None
+
+    def artistDetail(self,artists):
+      myartists = []
+      for a in artists:
+        if a.id in self.artists:
+          myartists.append(a)
+      return myartists
+
+artists_csv = loadData(Path("artists.csv"))
+artists = []
+
+for a in artists_csv:
+  if a['Nationality'] != '':
+    nation = a['Nationality']
+  else:
+    nation = None
+  artists.append(Artist(int(a['Artist ID']),
+                        a['Name'],
+                        nation,
+                        a['Gender'],
+                        string2Date(a['Birth Year']),
+                        string2Date(a['Death Year'])))
+
+artworks_csv = loadData(Path("artworks.csv"))
+artworks = []
+
+# Artwork ID,Title,Artist ID,Name,Date,Medium,Dimensions,Acquisition Date,Credit,
+# Catalogue,Department,Classification,Object Number,Diameter (cm),Circumference (cm),Height (cm),
+# Length (cm),Width (cm),Depth (cm),Weight (kg),Duration (s)
+
+for w in artworks_csv:
+  # artworks may have many artists
+  artistids = w['Artist ID'].split(',')
+  aids = []
+  for aid in artistids:
+    try:
+      aids.append(int(aid))
+    except:
+      pass
+
+  artworks.append(Artwork(int(w['Artwork ID']),
+                  w['Title'],
+                  aids,
+                  w['Name'],
+                  string2Date(w['Date']),
+                  w['Medium'],
+                  w['Dimensions'],
+                  string2Date(w['Acquisition Date']),
+                  w['Credit'],
+                  w['Catalogue'],
+                  w['Department'],
+                  w['Classification'],
+                  w['Object Number'],
+                  string2Float(w['Diameter (cm)']),
+                  string2Float(w['Circumference (cm)']),
+                  string2Float(w['Height (cm)']),
+                  string2Float(w['Length (cm)']),
+                  string2Float(w['Width (cm)']),
+                  string2Float(w['Depth (cm)']),
+                  string2Float(w['Weight (kg)']),
+                  string2Float(w['Duration (s)'])
+                  )
+  )
+
+# sanity checks
+# select a random artist
+aid = random.randint(1,1000)
+me = artists[aid]
+
+myworks = me.getMyArtworks(artworks)
+worktitles = "\n - ".join([w.title for w in myworks])
+
+print(f"My name is {me.name}, my gender is {me.gender}, and I am {me.nationality}.")
+print(f"MoMA collected {len(myworks)} of my works: \n - {worktitles}")
+
+genderSpecified = []
+
+for artist in artists:
+  if artist.gender:
+    genderSpecified.append(artist.gender)
+
+c = Counter(genderSpecified)
+
+d = donutplot(
+    list(c.keys()),
+    list(c.values()),
+    legend=f"Gender of {len(genderSpecified):,} artists with specified gender")
+
+plt.show()
+
+noGender = [a.id for a in artists if a.gender == '']
+noNationality = [a.id for a in artists if a.nationality == None]
+
+print(f"{len(noGender):,} artists have unspecified gender.")
+print(f"{len(noNationality):,} artists have unspecified nationality")
+print()
+
+# Start here
+noName = []
+noBirth = []
+noDeath = []
+
+for a in artists:
+    if a.name == None:
+        noName.append(a)
+    if a.birth == None:
+        noBirth.append(a)
+    if a.death == None:
+        noDeath.append(a)
+
+
+
+print("Get these values:")
+print(f"{len(noName):,} artists have no name.")
+print(f"{len(noBirth):,} artists have no birth year.")
+print(f"{len(noDeath):,} artists have no death year.")
+
+# What are their nationalities?
+
+c = Counter( [n.nationality for n in artists] )
+
+nations = [n for n, counte in c.items() if counte >= 500]
+counts = [counte for n, counte in c.items() if counte >= 500]
+
+d = donutplot(
+    list(nations),
+    list(counts),
+    legend=f"Top Nationalities of the {len(artists):,} artists collected by MoMA")
+
+
+plt.show()
+
+sns.barplot(x = nations, y = counts)
+
+# Create a function that will print walltext for a randomly seelcted artwork
+awid = random.randint(1,10000)
+showme = artworks[awid]
+
+# Display relevant info. Here's a hint!
+print(f"{showme.title} | {showme.date:%Y}")
+print(f"By {showme.name}")
+print(f"Medium: {showme.medium}")
+print(f"Dimensions: {showme.dimensions}")
+
+print("Help, I need names!")
+
+# How will you get the artists names?
+
+
