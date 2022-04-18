@@ -1,5 +1,5 @@
 # delete existing copies
-! rm *.csv ;
+#! rm *.csv ;
 
 # Get the data from GitHub
 !wget https://gist.githubusercontent.com/douglasgoodwin/4bebb2445759313a95690de41d338729/raw/5214a3761f648ccc9f3d692eab8a8e9cc8cd3fd7/artists.csv ;
@@ -107,6 +107,8 @@ class Artist:
         if self.id in w.artists:
           myartworks.append(w)
       return myartworks
+
+
 
 @dataclass
 class Artwork:
@@ -222,7 +224,7 @@ d = donutplot(
 
 plt.show()
 
-noGender = [a.id for a in artists if a.gender == '']
+noGender = [a.name for a in artists if a.gender == None]
 noNationality = [a.id for a in artists if a.nationality == None]
 
 print(f"{len(noGender):,} artists have unspecified gender.")
@@ -242,8 +244,13 @@ for a in artists:
     if a.death == None:
         noDeath.append(a)
 
-
-
+ct = 0
+for id in noName+noBirth+noDeath:
+        ct += 1
+        if ct < 100:
+            print(id)
+print()
+        
 print("Get these values:")
 print(f"{len(noName):,} artists have no name.")
 print(f"{len(noBirth):,} artists have no birth year.")
@@ -279,5 +286,12 @@ print(f"Dimensions: {showme.dimensions}")
 print("Help, I need names!")
 
 # How will you get the artists names?
+
+
+
+
+
+
+
 
 
